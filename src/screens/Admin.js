@@ -1,46 +1,54 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, Button } from "react-native";
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import firestore from '@react-native-firebase/firestore';
 
 const Admin = () => {
-  const [data, setData] = useState([]);
+  const [services, setServices] = useState([]);
+  const navigation = useNavigation();
 
   useEffect(() => {
-    // Tải dữ liệu từ API hoặc cơ sở dữ liệu
-    fetchData();
+    // Truy vấn danh sách dịch vụ từ Firestore
+    const unsubscribe = firestore()
+      .collection('services')
+      .onSnapshot((querySnapshot) => {
+        const servicesList = [];
+        querySnapshot.forEach((documentSnapshot) => {
+          servicesList.push({
+            id: documentSnapshot.id,
+            ...documentSnapshot.data(),
+          });
+        });
+        setServices(servicesList);
+      });
+
+    // Hủy đăng ký lắng nghe khi component bị hủy
+    return () => unsubscribe();
   }, []);
 
-  const fetchData = async () => {
-    // Giả sử chúng ta có một hàm để tải dữ liệu từ API
-    const apiData = await fetchYourApiData();
-    setData(apiData);
-  };
-
-  const renderItem = ({ item }) => (
-    <View style={styles.itemContainer}>
-      <Text style={styles.itemText}>{item.name}</Text>
-      {/* Thêm các nút hoặc hành động quản trị tại đây */}
-      <Button title="Edit" onPress={() => editItem(item.id)} />
-      <Button title="Delete" onPress={() => deleteItem(item.id)} />
-    </View>
-  );
-
-  const editItem = (id) => {
-    // Hàm để chỉnh sửa mục
-  };
-
-  const deleteItem = (id) => {
-    // Hàm để xóa mục
+  const navigateToAddNewService = () => {
+    navigation.navigate('AddNewService');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Admin Screen</Text>
+      <Text style={styles.title}>❀ Services ❀</Text>
       <FlatList
-        data={data}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
+        data={services}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.serviceItem}
+            onPress={() => navigation.navigate('ServiceDetail', { service: item })}
+          >
+            <Text>{item.name}</Text>
+            <Text>{item.price}</Text>
+          </TouchableOpacity>
+        )}
       />
-      <Text>Alo</Text>
+      <TouchableOpacity style={styles.addButton} onPress={navigateToAddNewService}>
+        <Text style={styles.addButtonText}>+</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -48,23 +56,47 @@ const Admin = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 50,
+    padding: 0,
+    top: 10,
+    backgroundColor: 'pink'
   },
-  header: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
+  title: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    backgroundColor: '#FF3333',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    color: 'white',
   },
-  itemContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+  serviceItem: {
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: '#eee',
+    left: 8,
+    
   },
-  itemText: {
-    fontSize: 18,
+  Item:{
+    left: 50
+  },
+  addButton: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    width: 50,
+    height: 50,
+    backgroundColor: '#FF0099',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    
+    
+  },
+  addButtonText: {
+    color: '35',
+    fontSize: 45,
+    fontWeight: 'normal',
+    bottom: 7,
   },
 });
 
